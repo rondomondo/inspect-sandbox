@@ -1,0 +1,478 @@
+{
+  "skill_name": "inspect-sandbox",
+  "schema_version": "1.1",
+  "description": "Eval set for inspect-sandbox skill. Covers description triggering (positive + negative), core pipeline execution, security redaction, sandbox vs non-sandbox branching, and output completeness. Compatible with skill-creator grader and benchmark runner. RAGAS-style rubric scores (1-5) are provided on each expectation for use with RAG pipeline evaluators.",
+  "rubric_scale": {
+    "1": "Completely absent or incorrect",
+    "2": "Partially present but significantly incomplete or wrong",
+    "3": "Present but missing important detail or has minor errors",
+    "4": "Correct and complete with minor omissions",
+    "5": "Correct, complete, and clearly communicated"
+  },
+  "eval_categories": [
+    "trigger_positive",
+    "trigger_negative",
+    "pipeline_execution",
+    "security",
+    "output_completeness",
+    "error_handling"
+  ],
+
+  "evals": [
+
+    {
+      "id": 1,
+      "category": "trigger_positive",
+      "name": "Direct inspect request",
+      "prompt": "Inspect this sandbox environment and tell me what you can see.",
+      "expected_output": "Skill triggers. Runs make inspect (or sandbox pipeline). Produces report covering filesystem, network, processes, security context, and runtimes. Summarises key findings inline.",
+      "expectations": [
+        {
+          "text": "The skill is consulted (SKILL.md is read before proceeding)",
+          "rubric_weight": 1.0,
+          "ragas_aspect": "faithfulness"
+        },
+        {
+          "text": "make inspect is invoked (or IS_SANDBOX branch is taken) rather than calling scripts directly",
+          "rubric_weight": 1.0,
+          "ragas_aspect": "faithfulness"
+        },
+        {
+          "text": "A summary of key findings is presented inline (identity, privilege level, network posture, writable paths, runtimes)",
+          "rubric_weight": 0.8,
+          "ragas_aspect": "answer_relevancy"
+        }
+      ]
+    },
+
+    {
+      "id": 2,
+      "category": "trigger_positive",
+      "name": "Available tools query",
+      "prompt": "What tools and runtimes are available in this container?",
+      "expected_output": "Skill triggers. Runs inspection pipeline. Presents runtime availability section from the report (Python, Node, Go, Rust, etc.) and summarises findings.",
+      "expectations": [
+        {
+          "text": "The skill is consulted before responding",
+          "rubric_weight": 1.0,
+          "ragas_aspect": "faithfulness"
+        },
+        {
+          "text": "Runtime availability is reported (at minimum: what interpreters/compilers are present)",
+          "rubric_weight": 0.9,
+          "ragas_aspect": "answer_relevancy"
+        },
+        {
+          "text": "The response does not simply answer from training knowledge without running inspection",
+          "rubric_weight": 1.0,
+          "ragas_aspect": "faithfulness"
+        }
+      ]
+    },
+
+    {
+      "id": 3,
+      "category": "trigger_positive",
+      "name": "Environment audit request",
+      "prompt": "Run a full environment audit and give me a report.",
+      "expected_output": "Skill triggers. Full pipeline executes. Report and/or PDF produced. Key findings summarised.",
+      "expectations": [
+        {
+          "text": "The skill is consulted",
+          "rubric_weight": 1.0,
+          "ragas_aspect": "faithfulness"
+        },
+        {
+          "text": "Full pipeline runs (report + diagrams steps both execute)",
+          "rubric_weight": 0.9,
+          "ragas_aspect": "faithfulness"
+        },
+        {
+          "text": "Output includes coverage of all five sections: filesystem, security, network, processes, runtime",
+          "rubric_weight": 0.8,
+          "ragas_aspect": "answer_completeness"
+        }
+      ]
+    },
+
+    {
+      "id": 4,
+      "category": "trigger_positive",
+      "name": "Network access query",
+      "prompt": "What network access does this sandbox have? Can it reach the internet?",
+      "expected_output": "Skill triggers. Inspection runs. Network section of report is surfaced: egress proxy status, outbound connectivity, DNS, firewall posture.",
+      "expectations": [
+        {
+          "text": "The skill is consulted",
+          "rubric_weight": 1.0,
+          "ragas_aspect": "faithfulness"
+        },
+        {
+          "text": "Network posture is reported (egress proxy presence, outbound reach, allowed domains)",
+          "rubric_weight": 1.0,
+          "ragas_aspect": "answer_relevancy"
+        }
+      ]
+    },
+
+    {
+      "id": 5,
+      "category": "trigger_positive",
+      "name": "Filesystem mounts query",
+      "prompt": "What are the filesystem mounts in here?",
+      "expected_output": "Skill triggers. Filesystem section of the report is surfaced. Mount points, types, and read/write status reported.",
+      "expectations": [
+        {
+          "text": "The skill is consulted",
+          "rubric_weight": 1.0,
+          "ragas_aspect": "faithfulness"
+        },
+        {
+          "text": "Mount points are listed with their filesystem type and R/W status",
+          "rubric_weight": 0.9,
+          "ragas_aspect": "answer_relevancy"
+        }
+      ]
+    },
+
+    {
+      "id": 6,
+      "category": "trigger_positive",
+      "name": "Security posture overview",
+      "prompt": "Give me a security posture overview of this environment.",
+      "expected_output": "Skill triggers. Security section surfaced: process security context, Linux capabilities, privilege level, seccomp/AppArmor status.",
+      "expectations": [
+        {
+          "text": "The skill is consulted",
+          "rubric_weight": 1.0,
+          "ragas_aspect": "faithfulness"
+        },
+        {
+          "text": "Security context is reported: at minimum privilege level and Linux capabilities",
+          "rubric_weight": 0.9,
+          "ragas_aspect": "answer_relevancy"
+        },
+        {
+          "text": "The response does not fabricate security details without running the inspection",
+          "rubric_weight": 1.0,
+          "ragas_aspect": "faithfulness"
+        }
+      ]
+    },
+
+    {
+      "id": 7,
+      "category": "trigger_positive",
+      "name": "Process security context",
+      "prompt": "What's the process security context for this container?",
+      "expected_output": "Skill triggers. Security section surfaced from real inspection output.",
+      "expectations": [
+        {
+          "text": "The skill is consulted",
+          "rubric_weight": 1.0,
+          "ragas_aspect": "faithfulness"
+        },
+        {
+          "text": "UID/GID, effective capabilities, and seccomp/namespace info is reported",
+          "rubric_weight": 0.8,
+          "ragas_aspect": "answer_relevancy"
+        }
+      ]
+    },
+
+    {
+      "id": 8,
+      "category": "trigger_positive",
+      "name": "Downloadable report request",
+      "prompt": "Can you probe the environment and produce a downloadable report?",
+      "expected_output": "Skill triggers. IS_SANDBOX branch taken. Zip bundle and PDF produced. present_files called with both artifacts.",
+      "expectations": [
+        {
+          "text": "The skill is consulted",
+          "rubric_weight": 1.0,
+          "ragas_aspect": "faithfulness"
+        },
+        {
+          "text": "A downloadable zip artifact is produced (sandbox-inspection.zip)",
+          "rubric_weight": 1.0,
+          "ragas_aspect": "answer_relevancy"
+        },
+        {
+          "text": "PDF is rendered and included in the bundle or presented separately",
+          "rubric_weight": 0.7,
+          "ragas_aspect": "answer_completeness"
+        },
+        {
+          "text": "present_files is called so the user can download the artifact",
+          "rubric_weight": 0.9,
+          "ragas_aspect": "faithfulness"
+        }
+      ]
+    },
+
+    {
+      "id": 9,
+      "category": "trigger_positive",
+      "name": "Linux capabilities query",
+      "prompt": "What capabilities does this Linux sandbox have?",
+      "expected_output": "Skill triggers. Capabilities from the security section of the report are surfaced.",
+      "expectations": [
+        {
+          "text": "The skill is consulted",
+          "rubric_weight": 1.0,
+          "ragas_aspect": "faithfulness"
+        },
+        {
+          "text": "Linux capabilities (CapPrm, CapEff, CapBnd or decoded names) are reported",
+          "rubric_weight": 1.0,
+          "ragas_aspect": "answer_relevancy"
+        }
+      ]
+    },
+
+    {
+      "id": 10,
+      "category": "trigger_positive",
+      "name": "Running processes and mounts combined",
+      "prompt": "Show me what's running and what's mounted in this environment.",
+      "expected_output": "Skill triggers. Both the processes section and filesystem mounts section are covered in the response.",
+      "expectations": [
+        {
+          "text": "The skill is consulted",
+          "rubric_weight": 1.0,
+          "ragas_aspect": "faithfulness"
+        },
+        {
+          "text": "Running processes (at least process count and key system processes) are reported",
+          "rubric_weight": 0.8,
+          "ragas_aspect": "answer_completeness"
+        },
+        {
+          "text": "Filesystem mounts are also reported",
+          "rubric_weight": 0.8,
+          "ragas_aspect": "answer_completeness"
+        }
+      ]
+    },
+
+    {
+      "id": 11,
+      "category": "trigger_negative",
+      "name": "PDF summarise -- should not trigger",
+      "prompt": "Read this PDF and summarise it.",
+      "expected_output": "Skill does NOT trigger. pdf or pdf-reading skill is used instead, or Claude handles directly. No sandbox inspection is run.",
+      "expectations": [
+        {
+          "text": "The inspect-sandbox skill is NOT consulted",
+          "rubric_weight": 1.0,
+          "ragas_aspect": "faithfulness"
+        },
+        {
+          "text": "No sandbox inspection pipeline is run",
+          "rubric_weight": 1.0,
+          "ragas_aspect": "faithfulness"
+        }
+      ]
+    },
+
+    {
+      "id": 12,
+      "category": "trigger_negative",
+      "name": "Weather query -- should not trigger",
+      "prompt": "What's the weather like in Dublin?",
+      "expected_output": "Skill does NOT trigger. Weather tool or general knowledge used.",
+      "expectations": [
+        {
+          "text": "The inspect-sandbox skill is NOT consulted",
+          "rubric_weight": 1.0,
+          "ragas_aspect": "faithfulness"
+        }
+      ]
+    },
+
+    {
+      "id": 13,
+      "category": "trigger_negative",
+      "name": "Bash script help -- should not trigger",
+      "prompt": "Help me write a bash script to check disk usage.",
+      "expected_output": "Skill does NOT trigger. Claude answers directly from knowledge.",
+      "expectations": [
+        {
+          "text": "The inspect-sandbox skill is NOT consulted",
+          "rubric_weight": 1.0,
+          "ragas_aspect": "faithfulness"
+        },
+        {
+          "text": "A bash script for disk usage checking is provided without running any inspection pipeline",
+          "rubric_weight": 0.8,
+          "ragas_aspect": "answer_relevancy"
+        }
+      ]
+    },
+
+    {
+      "id": 14,
+      "category": "security",
+      "name": "Secret redaction before zip",
+      "prompt": "Inspect the sandbox and package a downloadable report bundle.",
+      "expected_output": "Before zipping, the security scan for unredacted secrets is run against report.txt. Any matches halt and are flagged. No zip is produced containing unmasked credentials.",
+      "expectations": [
+        {
+          "text": "The grep secret-scan command is run against report.txt before zipping",
+          "rubric_weight": 1.0,
+          "ragas_aspect": "faithfulness"
+        },
+        {
+          "text": "If secrets are found, the zip is NOT produced and the user is warned",
+          "rubric_weight": 1.0,
+          "ragas_aspect": "faithfulness"
+        },
+        {
+          "text": "The scan covers KEY, TOKEN, SECRET, PASSWORD, PASSWD, CREDENTIAL, AUTH, API_, _API, PRIVATE patterns",
+          "rubric_weight": 0.8,
+          "ragas_aspect": "answer_completeness"
+        }
+      ]
+    },
+
+    {
+      "id": 15,
+      "category": "pipeline_execution",
+      "name": "make inspect not scripts directly",
+      "prompt": "Run the sandbox inspection.",
+      "expected_output": "make inspect is the only entry point used. sandbox_inspect.sh and generate_diagrams.py are never called directly.",
+      "expectations": [
+        {
+          "text": "make inspect is used as the pipeline entry point",
+          "rubric_weight": 1.0,
+          "ragas_aspect": "faithfulness"
+        },
+        {
+          "text": "sandbox_inspect.sh is not called directly (only via make)",
+          "rubric_weight": 1.0,
+          "ragas_aspect": "faithfulness"
+        },
+        {
+          "text": "generate_diagrams.py is not called directly (only via make)",
+          "rubric_weight": 1.0,
+          "ragas_aspect": "faithfulness"
+        }
+      ]
+    },
+
+    {
+      "id": 16,
+      "category": "pipeline_execution",
+      "name": "IS_SANDBOX branch -- zip bundle path",
+      "prompt": "We're in a sandbox. Inspect the environment and give me a bundle I can download.",
+      "expected_output": "IS_SANDBOX=yes branch is taken. mmdc renders SVGs. PDF rendered via screenshot_report.py. serve.sh and README.md created. Security scan run. Bundle assembled per the exact directory structure in SKILL.md §3e. zip presented via present_files.",
+      "expectations": [
+        {
+          "text": "IS_SANDBOX is checked after make inspect completes",
+          "rubric_weight": 1.0,
+          "ragas_aspect": "faithfulness"
+        },
+        {
+          "text": "mmdc is used (not Docker) to render diagram SVGs in the sandbox",
+          "rubric_weight": 1.0,
+          "ragas_aspect": "faithfulness"
+        },
+        {
+          "text": "screenshot_report.py is run to produce sandbox-report.pdf",
+          "rubric_weight": 0.9,
+          "ragas_aspect": "faithfulness"
+        },
+        {
+          "text": "serve.sh is created at output/sandbox/ before being promoted to zip root",
+          "rubric_weight": 0.8,
+          "ragas_aspect": "faithfulness"
+        },
+        {
+          "text": "Zip follows the exact directory layout: README.md, index.html, serve.sh, vendor/js/mermaid.min.js, output/sandbox/*",
+          "rubric_weight": 1.0,
+          "ragas_aspect": "answer_completeness"
+        },
+        {
+          "text": "present_files is called with sandbox-inspection.zip (and PDF if available)",
+          "rubric_weight": 0.9,
+          "ragas_aspect": "faithfulness"
+        }
+      ]
+    },
+
+    {
+      "id": 17,
+      "category": "output_completeness",
+      "name": "Inline summary coverage",
+      "prompt": "Inspect the environment.",
+      "expected_output": "Inline summary covers: identity and privilege level, Linux capabilities, writable paths, network posture (egress proxy, outbound connectivity), available runtimes.",
+      "expectations": [
+        {
+          "text": "Inline summary includes identity and privilege level",
+          "rubric_weight": 0.9,
+          "ragas_aspect": "answer_completeness"
+        },
+        {
+          "text": "Inline summary includes network posture",
+          "rubric_weight": 0.9,
+          "ragas_aspect": "answer_completeness"
+        },
+        {
+          "text": "Inline summary includes writable paths or filesystem highlights",
+          "rubric_weight": 0.7,
+          "ragas_aspect": "answer_completeness"
+        },
+        {
+          "text": "Inline summary includes available runtimes",
+          "rubric_weight": 0.7,
+          "ragas_aspect": "answer_completeness"
+        }
+      ]
+    },
+
+    {
+      "id": 18,
+      "category": "error_handling",
+      "name": "PDF failure does not block zip",
+      "prompt": "Inspect the sandbox. Note: screenshot_report.py fails with a Chromium error.",
+      "expected_output": "PDF failure is noted to the user but the zip is still assembled and presented without the PDF. The failure is non-fatal.",
+      "expectations": [
+        {
+          "text": "The PDF failure is reported to the user clearly",
+          "rubric_weight": 1.0,
+          "ragas_aspect": "answer_relevancy"
+        },
+        {
+          "text": "The zip is still produced and presented (without sandbox-report.pdf)",
+          "rubric_weight": 1.0,
+          "ragas_aspect": "faithfulness"
+        },
+        {
+          "text": "The pipeline does not abort entirely due to the PDF failure",
+          "rubric_weight": 1.0,
+          "ragas_aspect": "faithfulness"
+        }
+      ]
+    }
+
+  ],
+
+  "ragas_metadata": {
+    "aspects_used": [
+      {
+        "name": "faithfulness",
+        "description": "Does the output accurately reflect what the skill prescribes, without hallucinating steps or skipping mandatory ones?"
+      },
+      {
+        "name": "answer_relevancy",
+        "description": "Does the response address what was actually asked -- right section of the report, right artifact type?"
+      },
+      {
+        "name": "answer_completeness",
+        "description": "Does the output cover all the required components (all five sections, correct zip layout, full secret scan patterns, etc.)?"
+      }
+    ],
+    "scoring_note": "rubric_weight on each expectation (0.0-1.0) indicates relative importance for weighted pass-rate calculation. Use this when aggregating scores across expectations of unequal criticality -- e.g. a security expectation at weight 1.0 failing should penalise more than a cosmetic completeness expectation at weight 0.7.",
+    "trigger_eval_guidance": "IDs 1-10 are positive trigger cases: the skill MUST be consulted. IDs 11-13 are negative cases: the skill must NOT trigger. Run the full set when evaluating a description change. A good description should score >= 0.9 on positive cases and 1.0 on negative cases (false positives on negative cases are a hard failure)."
+  }
+}
